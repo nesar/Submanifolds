@@ -56,34 +56,48 @@ def ParticleLabel(regionLabels, x1d, y1d, z1d):
     return xlabel    # Returns 1D labels corresponding to particles
 
 
+L = 100.
 nGr = 128
 refFactor = 1
+Dn = 60      # 60 for all except 100Mpc-512 (160)
 size_fact = nGr*refFactor
-L = 1.
+lBox = str(int(L))+'Mpc'+str(nGr)
+
+UnderLength = 1  # 0.1
+# slice_noX = int(UnderLength*size_fact/(2*L))
+sliceNo = 40
+#--------#--------#--------#--------#--------
+sigList = [0.0, 0.5, 1.0, 1.5, 2.0]
+sig = sigList[4]
+dLoad = './npy/'+lBox+'/'
 
 
+file_nstr = dLoad+'numField_050_'+str(refFactor)+'.npy'
+nstream = np.load(file_nstr).astype(np.float64)
+lBox = str(int(L))+'Mpc'
+dir1 = lBox+str(nGr)+'/'
+flip = np.load('npy/'+dir1+'flip_snap_050.npy')
 
-
-nstream = np.load('npy/numField_051_'+str(refFactor)+'.npy')
-flip = np.load('npy/flip_snap_051.npy')
 
 img3d_n = np.log(nstream)
-img3d_f = np.log(flip+1) 
+img3d_f = np.log(flip+1)
 
-img3d_n = nstream == 1 
-img3d_f = flip == 0 
+#img3d_n = nstream == 1
+#img3d_f = flip == 0
 
-fileOut = 'npy/x0_'+'snap_051.npy'
-x0_1d = np.ravel(np.load(fileOut), 'F')
-fileOut = 'npy/x1_'+'snap_051.npy'
-x1_1d = np.ravel(np.load(fileOut), 'F')
-fileOut = 'npy/x2_'+'snap_051.npy'
-x2_1d = np.ravel(np.load(fileOut), 'F')
+x0_3d = np.load(dLoad+'x0'+'_snap_050.npy')
+x1_3d = np.load(dLoad+'x1'+'_snap_050.npy')
+x2_3d = np.load(dLoad+'x2'+'_snap_050.npy')
+
+# fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x0_'+'snap_051.npy'
+x0_1d = np.ravel(x0_3d, 'F')
+# fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x1_'+'snap_051.npy'
+x1_1d = np.ravel(x1_3d, 'F')
+# fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x2_'+'snap_051.npy'
+x2_1d = np.ravel(x2_3d, 'F')
 
 flip_1d = np.ravel((flip), 'F')
 
-
-UnderLength = 0.1
 
 particlenstr1d = ParticleLabel( nstream, x0_1d, x1_1d, x2_1d)
 
@@ -99,7 +113,7 @@ y,binEdges = np.histogram( flip_1d, bins = nbins, density=False)
 bincenters = 0.5*(binEdges[1:]+binEdges[:-1])
 #y = np.cumsum(y[::-1])[::-1]
 
-strLabel = r"$n_{ff}(n)$"
+strLabel = r"$n_{ff}$(on particles)"
 #plt.plot(bincenters, 1.*y, color = 'darkred', label = strLabel)
 plt.plot(bincenters, 1.*y/y.sum(), color = 'darkred', label = strLabel)
 
@@ -114,7 +128,7 @@ bincenters = 0.5*(binEdges[1:]+binEdges[:-1])
 
 #y = np.cumsum(y[::-1])[::-1]
 
-strLabel = r"$n_{str}$(n)"
+strLabel = r"$n_{str}$(on grid)"
 #plt.plot(bincenters, 1.*y, color = 'navy', label = strLabel)
 plt.plot(bincenters, 1.*y/y.sum(), color = 'navy', label = strLabel)
 
@@ -126,7 +140,7 @@ y,binEdges = np.histogram( nstream, bins = nbins, density=False)
 bincenters = 0.5*(binEdges[1:]+binEdges[:-1])
 #y = np.cumsum(y[::-1])[::-1]
 
-strLabel = r"$n_{str}$(x)"
+strLabel = r"$n_{str}$(on particles)"
 #plt.plot(bincenters, 1.*y, color = 'forestgreen', label = strLabel)
 plt.plot(bincenters, 1.*y/y.sum(), color = 'forestgreen', label = strLabel)
 

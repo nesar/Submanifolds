@@ -440,8 +440,9 @@ toPara.Points1d(q0_labeled*size_fact/L , q1_labeled*size_fact/L , q2_labeled*siz
 toPara.StructuredScalar(labels0, 'vti/l3_051_'+str(refFactor), 0, size_fact)
 toPara.StructuredScalar(nstream, 'vti/nstr_051_'+str(refFactor), 0, size_fact)
 
-import sys
-sys.exit()
+
+
+raw_input()
 
 #----------------------------------PLOTTING & STATISTICS-------------------------------
 

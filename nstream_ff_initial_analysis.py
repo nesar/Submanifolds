@@ -167,29 +167,46 @@ def ParticleLabel(regionLabels, x1d, y1d, z1d):
     return xlabel    # Returns 1D labels corresponding to particles
 
 
+# L = 1.
+
+L = 100.
 nGr = 128
 refFactor = 1
+Dn = 60      # 60 for all except 100Mpc-512 (160)
 size_fact = nGr*refFactor
-L = 1.
+
+lBox = str(int(L))+'Mpc'+str(nGr)
+#--------#--------#--------#--------#--------
+sigList = [0.0, 0.5, 1.0, 1.5, 2.0]
+sig = sigList[4]
+dLoad = './npy/'+lBox+'/'
+
+file_nstr = dLoad+'numField_050_'+str(refFactor)+'.npy'
+nstream = np.load(file_nstr).astype(np.float64)
+lBox = str(int(L))+'Mpc'
+dir1 = lBox+str(nGr)+'/'
+flip = np.load('npy/'+dir1+'flip_snap_050.npy')
 
 
-
-
-nstream = np.load('npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/numField_051_'+str(refFactor)+'.npy')
-flip = np.load('npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/flip_snap_051.npy')
+# nstream = np.load('npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/numField_051_'+str(refFactor)+'.npy')
+# flip = np.load('npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/flip_snap_051.npy')
 
 img3d_n = np.log(nstream)
 img3d_f = np.log(flip+1) 
 
 #img3d_n = nstream == 1 
-#img3d_f = flip == 0 
+#img3d_f = flip == 0
 
-fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x0_'+'snap_051.npy'
-x0_1d = np.ravel(np.load(fileOut), 'F')
-fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x1_'+'snap_051.npy'
-x1_1d = np.ravel(np.load(fileOut), 'F')
-fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x2_'+'snap_051.npy'
-x2_1d = np.ravel(np.load(fileOut), 'F')
+x0_3d = np.load(dLoad+'x0'+'_snap_050.npy')
+x1_3d = np.load(dLoad+'x1'+'_snap_050.npy')
+x2_3d = np.load(dLoad+'x2'+'_snap_050.npy')
+
+# fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x0_'+'snap_051.npy'
+x0_1d = np.ravel(x0_3d, 'F')
+# fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x1_'+'snap_051.npy'
+x1_1d = np.ravel(x1_3d, 'F')
+# fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x2_'+'snap_051.npy'
+x2_1d = np.ravel(x2_3d, 'F')
 
 flip_1d = np.ravel((flip), 'F')
 
@@ -198,11 +215,20 @@ flip_1d = np.ravel((flip), 'F')
 
 
 
-f, ax = plt.subplots(1,3, figsize = (20,6))
+#file_ff = './npy/numField_051_'+str(refFactor)+'.npy'
+
+
+
+
+
+
+
+sliceNo = 45
+f, ax = plt.subplots(1,3, figsize = (20,6), sharey=True)
 f.subplots_adjust(  wspace = 0.05, hspace = 0.02, bottom = 0.15, left = 0.1, right = 0.85)
 
 ticksLoc = np.linspace(0, img3d_n.shape[0], 6)
-ticksLabel = [ '', '0.2', '0.4', '0.6', '0.8', '' ]
+ticksLabel = [ '', '20', '40', '60', '80', '' ]
     
 #cmap = colors.ListedColormap(['white', 'gray', 'red'])
 #bounds=[0,1, 2,   np.max(nstream)]
@@ -212,20 +238,22 @@ cmap= 'CMRmap_r'
     
 
 plt.sca(ax[2])
-imshow(img3d_n[5,:,:], origin='lower', interpolation='nearest', cmap = cmap)
+imshow(img3d_n[sliceNo,:,:], origin='lower', interpolation='nearest', cmap = cmap)
 #colorbar()
 title(r"$n_{str}(z = 0)$")
 #plt.minorticks_on()
 plt.xlabel(r" $h^{-1} Mpc$")
 plt.xticks(ticksLoc , ticksLabel  )
 plt.yticks([])
+plt.xlim(0,100)
+plt.ylim(0,100)
 
     
 #plt.gca().set_yticks(ticksLabel)
     
 #subplot(2,3,4)
 plt.sca(ax[0])
-imshow(img3d_f[5,:,:], origin='lower', interpolation='nearest', cmap = cmap)
+imshow(img3d_f[sliceNo,:,:], origin='lower', interpolation='nearest', cmap = cmap)
 #colorbar()
 title(r"$ff(z_{ini})$")
 #plt.minorticks_on()
@@ -233,9 +261,10 @@ plt.xlabel(r" $h^{-1} Mpc$")
 plt.ylabel(r" $h^{-1} Mpc$")
 plt.yticks( ticksLoc, ticksLabel  )
 plt.xticks( ticksLoc, ticksLabel  )
+plt.xlim(0,100)
+plt.ylim(0,100)
 
-
-non0ff = np.where( (flip_1d > 0)  & (x0_1d < 0.1))
+non0ff = np.where( (flip_1d > 0)  & ( np.abs(x0_1d - sliceNo*L/nGr)  < 2.0) )
 plt.sca(ax[1])
 #plt.plot(x2_1d[non0ff], x1_1d[non0ff], 'o', alpha = 0.3, markersize = 1)
 
@@ -245,26 +274,25 @@ bounds=[1,3, 5, 10, np.max(flip_1d[non0ff])]
 norm = colors.BoundaryNorm(bounds, cmap)
     
     
-scatter(x2_1d[non0ff], x1_1d[non0ff], 
+scatter(x2_1d[non0ff], x1_1d[non0ff],
 c = np.log(flip_1d[non0ff]+1), alpha = 0.5, s = 2, cmap = 'gist_stern', edgecolors = 'none')
 #colorbar()
 title(r"$ff(z=0)$")
 #plt.minorticks_on()
 plt.xlabel(r" $h^{-1} Mpc$")
 #plt.ylabel(r" $h^{-1} Mpc$")
-plt.xlim(0,1)
-plt.ylim(0,1)
-ticksLoc = ticksLabel
+plt.xlim(10,90)
+plt.ylim(10,90)
+# ticksLoc = ticksLabel
 plt.yticks([] )
-#plt.xticks( ticksLoc, ticksLabel  )
+# plt.xticks( ticksLoc, ticksLabel  )
 
 
 plt.show()
 
 
 
-import sys
-sys.exit()
+raw_input()
 
 
 

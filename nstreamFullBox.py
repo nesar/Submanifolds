@@ -49,7 +49,7 @@ def extend_box(Dn,comp,x):
 #===================================================================
     
 time1=int(time())
-refFactor = 1 ;  # Refinment factor
+refFactor = 4   # Refinment factor
 
 L = 100.
 

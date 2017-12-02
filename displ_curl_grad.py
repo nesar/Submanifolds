@@ -5,20 +5,22 @@ import matplotlib.pyplot as plt
 #import os
 #from mpi4py import MPI
 import time
+import SetPub
+SetPub.set_pub()
 
 
-L = 1
+L = 100
 nGr = 128
 dirIn = 'npy/'+str(L)+'Mpc'+str(nGr)+'/'
 
 
-fileOut = dirIn+'s0_'+'snap_051.npy'
+fileOut = dirIn+'s0_'+'snap_050.npy'
 #s0 = np.ravel(np.load(fileOut), order ='C')
 s0 = np.load(fileOut)
-fileOut = dirIn+'s1_'+'snap_051.npy'
+fileOut = dirIn+'s1_'+'snap_050.npy'
 #s1 = np.ravel(np.load(fileOut), order ='C')
 s1 = np.load(fileOut)
-fileOut = dirIn+'s2_'+'snap_051.npy'
+fileOut = dirIn+'s2_'+'snap_050.npy'
 #s2 = np.ravel(np.load(fileOut), order ='C')
 s2 = np.load(fileOut)
 
@@ -68,25 +70,25 @@ def div(f):
 
 divS = div([s0, s1, s2])
 curlSx, curlSy, curlSz = curl([s0, s1, s2])
-CurlMag = curlSx**2 + curlSy**2 + curlSz**2
+curlMag = curlSx**2 + curlSy**2 + curlSz**2
 
 
 refFactor = 1
-nstream = np.load(dirIn+'numField_051_'+str(refFactor)+'.npy')
-flip = np.load(dirIn+'flip_snap_051.npy')
+nstream = np.load(dirIn+'numField_050_'+str(refFactor)+'.npy')
+flip = np.load(dirIn+'flip_snap_050.npy')
 
 
 f, ax = plt.subplots(2,2, figsize = (18,20), sharex = True, sharey = True)
 f.subplots_adjust(  wspace = 0.02, hspace = 0.2, bottom = 0.15, left = 0.1, right = 0.9)
 
-sliceNo = 125
+sliceNo = 53
 
 plt.sca(ax[0,0])
 plt.imshow(  symlog(divS[sliceNo,:,:]))
 plt.title('log(div(s))', fontsize = 50)
 
 plt.sca(ax[0,1])
-plt.imshow( symlog(CurlMag[sliceNo,:,:]) )
+plt.imshow( symlog(curlMag[sliceNo,:,:]) )
 plt.colorbar()
 plt.title('log(|Curl(s)|)', fontsize = 50)
 
@@ -106,25 +108,69 @@ plt.show()
 
 
 plt.figure(13)
-plt.imshow( symlog(CurlMag[sliceNo,:,:]) > -3 )
+plt.imshow( symlog(curlMag[sliceNo,:,:]) > 0 )
 
-
+# ------ change in kunak -----------------------------
 plt.figure(10)
-x = np.linspace(0, L, nGr)*nGr
-y = np.linspace(0, L, nGr)*nGr
-X, Y = np.meshgrid(x, y)
+q0_1d = np.linspace(0, nGr, nGr)
+q1_1d = np.linspace(0, nGr, nGr)
+# q0_mesh, q1_mesh = np.meshgrid(q0_1d, q1_1d)
 
 
-plt.quiver(x, y, curlSx[0], curlSy[0], curlSz[0], cmap = 'nipy_spectral' )
-plt.imshow(flip[0], alpha = 0.5)
+# plt.quiver(q0_mesh, q1_mesh, curlSx[sliceNo], curlSy[sliceNo], curlSz[sliceNo], cmap = 'nipy_spectral' )
+
+plt.quiver(q0_1d, q1_1d, curlSx[sliceNo], curlSy[sliceNo], curlSz[sliceNo], cmap = 'nipy_spectral' )
+
+
+plt.imshow(flip[sliceNo], alpha = 0.5)
 # plt.streamplot(x, y, curlSx[0], curlSy[0], density=0.6 )
 
-plt.show()
+# plt.show()
+
+
+
+
+
 
 # selecting parts from curl/div and mapping to eulerian coordinates
-q0_3d, q1_3d, q2_3d = np.mgrid[0:nGr, 0:nGr, 0:nGr]*L/nGr   # q_i  in Mpc
-q_select = np.where( symlog(CurlMag) > -3 )
-q0_3d[q_select] - s0[q_select]
+q0_3d, q1_3d, q2_3d = 1.*np.mgrid[0:nGr, 0:nGr, 0:nGr]#*L/nGr   # q_i  in Mpc
+particle_select = np.where(   (symlog(curlMag) > 0  ) & ( np.abs(q2_3d - sliceNo)  < 2.0 ) )
+# particle_select = np.where(   (flip == 2) & ( np.abs(q2_3d - sliceNo)  < 2.0 )  )
+
+q0_select = q0_3d[particle_select]
+q1_select = q1_3d[particle_select]
+q2_select = q2_3d[particle_select]
+
+curlSx_select = curlSx[particle_select]
+curlSy_select = curlSy[particle_select]
+curlSz_select = curlSz[particle_select]
+curlMag_select = curlMag[particle_select]
+
+
+plt.figure(15, figsize = (14,10))
+# Seems like mesh isn't really required!
+# q0_1d = np.linspace(0, L, nGr)*nGr
+# q1_1d = np.linspace(0, L, nGr)*nGr
+# q0_mesh, q1_mesh = np.meshgrid(q0_select, q1_select)
+plt.quiver(q1_select, q0_select, curlSy_select, curlSx_select, curlMag_select, cmap = 'nipy_spectral' , alpha = 0.99)
+cb = plt.colorbar(fraction=0.046, pad =0.08)
+cb.set_label(r'$|\nabla \times s |$', labelpad =-1)
+
+plt.imshow(flip[:,:,sliceNo]  , cmap = 'gist_ncar_r', alpha = 0.3)
+cb = plt.colorbar(fraction=0.046, pad =0.04)
+cb.set_label(r'$n_{ff}$', labelpad =-1)
+
+plt.tight_layout()
+
+
+
+
+
+
+
+
+
+
 
 
 import sys

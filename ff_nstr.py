@@ -53,42 +53,59 @@ def ParticleLabel(regionLabels, x1d, y1d, z1d):
     xlabel_all = np.vstack([xlabel_ceil, xlabel_floor , xlabel_round])
 
     xlabel = np.min(xlabel_all, axis = 0)
-    xlabel = np.max(xlabel_all, axis = 0)    
-    xlabel = xlabel_round   # REMOVE
+    # xlabel = np.max(xlabel_all, axis = 0)
+    # xlabel = xlabel_round   # REMOVE
     
     return xlabel    # Returns 1D labels corresponding to particles
 
+# ------------------------------
 
+L = 100.
 nGr = 128
-refFactor = 1
+refFactor = 2
+Dn = 60      # 60 for all except 100Mpc-512 (160)
 size_fact = nGr*refFactor
-L = 1.
-UnderLength = 0.1   # 0.1
-slice_noX = int(UnderLength*size_fact/(2*L))
+lBox = str(int(L))+'Mpc'+str(nGr)
+
+UnderLength = 1  # 0.1
+# slice_noX = int(UnderLength*size_fact/(2*L))
+sliceNo = 40
+#--------#--------#--------#--------#--------
+sigList = [0.0, 0.5, 1.0, 1.5, 2.0]
+sig = sigList[4]
+dLoad = './npy/'+lBox+'/'
+
+file_nstr = dLoad+'numField_050_'+str(refFactor)+'.npy'
+nstream = np.load(file_nstr).astype(np.float64)
+lBox = str(int(L))+'Mpc'
+dir1 = lBox+str(nGr)+'/'
+flip = np.load('npy/'+dir1+'flip_snap_050.npy')
 
 
-
-
-nstream = np.load('npy/numField_051_'+str(refFactor)+'.npy')
-flip = np.load('npy/flip_snap_051.npy')
+# nstream = np.load('npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/numField_051_'+str(refFactor)+'.npy')
+# flip = np.load('npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/flip_snap_051.npy')
 
 img3d_n = np.log(nstream)
-img3d_f = np.log(flip+1) 
+img3d_f = np.log(flip+1)
 
-img3d_n = nstream == 1 
-img3d_f = flip == 0 
+#img3d_n = nstream == 1
+#img3d_f = flip == 0
 
-fileOut = 'npy/x0_'+'snap_051.npy'
-x0_1d = np.ravel(np.load(fileOut), 'F')
-fileOut = 'npy/x1_'+'snap_051.npy'
-x1_1d = np.ravel(np.load(fileOut), 'F')
-fileOut = 'npy/x2_'+'snap_051.npy'
-x2_1d = np.ravel(np.load(fileOut), 'F')
+x0_3d = np.load(dLoad+'x0'+'_snap_050.npy')
+x1_3d = np.load(dLoad+'x1'+'_snap_050.npy')
+x2_3d = np.load(dLoad+'x2'+'_snap_050.npy')
+
+# fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x0_'+'snap_051.npy'
+x0_1d = np.ravel(x0_3d, 'F')
+# fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x1_'+'snap_051.npy'
+x1_1d = np.ravel(x1_3d, 'F')
+# fileOut = 'npy/'+str( int(L) ) +'Mpc'+str(nGr)+'/x2_'+'snap_051.npy'
+x2_1d = np.ravel(x2_3d, 'F')
 
 flip_1d = np.ravel((flip), 'F')
 
 
-
+# ------------------------------
 
 particlenstr1d = ParticleLabel( nstream, x0_1d, x1_1d, x2_1d)
 
@@ -99,28 +116,81 @@ ns0 = (   (particlenstr1d == 1) )
 ns1 = (   (particlenstr1d > 1) )
 numF0 = (    (nstream == 0)    )
 numF1 = (    (nstream >= 0)    )
+# sliceWidth = (x0_1d < UnderLength)
+sliceWidth = ( np.abs(x0_1d - sliceNo*L/size_fact) < UnderLength )
 
+# ------------------------------
 
-ff0ns0 = np.where(  (x0_1d < UnderLength)   &   ( (ff0) & (ns0)) )
-# nstream == 1 &  flip-flop = 0  -- mosr particles within single-stream region
+ff0ns0 = np.where(  sliceWidth   &   ( (ff0) & (ns0)) )
+# nstream == 1 &  flip-flop = 0  -- most particles within single-stream region
 
-ff0ns1 = np.where(  (x0_1d < UnderLength)   &   ( (ff0) & (ns1)) )
+ff0ns1 = np.where(  sliceWidth  &   ( (ff0) & (ns1)) )
 # nstream > 1 &  flip-flop = 0  -- few particles within multi-stream region
 
-ff1ns1 = np.where(  (x0_1d < UnderLength)   &  ( (ff1) & (ns1)) )
+ff1ns1 = np.where(  sliceWidth   &  ( (ff1) & (ns1)) )
 # nstream > 1 &  flip-flop > 1  -- particles within multi-stream region, flipped 
 
-ff1ns0 = np.where(  (x0_1d < UnderLength)   &  ( (ff1) & (ns0)) )
+ff1ns0 = np.where(  sliceWidth   &  ( (ff1) & (ns0)) )
 # nstream == 1 &  flip-flop > 0 -- expected None  -- finite value due to interpolation issue
 print ff1ns0[0].shape
 
 
+# ------------------------------
+
+
+nstream_2d = nstream[sliceNo,:,:]
+
+plt.figure(1000, figsize = (8,8))
+# plt.contour(nstream_2d.transpose(), levels = [1], colors = ['r'], linewidths = 2.5,
+#             alpha = 0.6, label = r'$n_{str} > 1$')
+plt.contourf(nstream_2d.transpose(), levels = [3, nstream_2d.max()], colors = ['r'], alpha = 0.6, label = r'$n_{str} > 1$')
+plt.scatter( x1_1d[ff0 & sliceWidth]*size_fact/L, x2_1d[ff0 & sliceWidth]*size_fact/L, alpha = 0.8 , s = 3, facecolors='k', edgecolors='none', label = r'$n_{ff} = 0$')
+plt.legend()
+# plt.xlim(0,70)
+# plt.ylim(0,70)
+# plt.colorbar()
+plt.savefig('plots/ff0_slice.pdf', bbox_inches='tight')
+
+
+plt.figure(1001, figsize = (8,8))
+plt.contourf(nstream_2d.transpose(), levels = [3, nstream_2d.max()], colors = ['r'], alpha = 0.6, label = r'$n_{str} > 1$')
+plt.scatter( x1_1d[ff1 & sliceWidth]*size_fact/L, x2_1d[ff1 & sliceWidth]*size_fact/L, alpha = 0.8 , s = 3, facecolors='k', edgecolors='none', label = r'$n_{ff} > 0$')
+plt.legend()
+# plt.xlim(0,70)
+# plt.ylim(0,70)
+plt.savefig('plots/ff1_slice.pdf', bbox_inches='tight')
+
+
+
+plt.figure(1002)
+
+flipns0 = flip_1d[ns0] # Flip of particles in single-streaming region
+
+nbins = np.arange(-0.5, np.max(flipns0)+0.5, 1)
+y,binEdges = np.histogram( flipns0, bins = nbins, density=False)
+bincenters = 0.5*(binEdges[1:]+binEdges[:-1])
+#y = np.cumsum(y[::-1])[::-1]
+
+strLabel = r"$n_{ff}$( single stream)"
+#plt.plot(bincenters, 1.*y, color = 'forestgreen', label = strLabel)
+plt.plot(bincenters, 1.*y/y.sum(), '-o', color = 'forestgreen', label = strLabel)
+
+
+# ------------------------------
+
 plt.figure(12)
 plt.scatter( x1_1d[ff0ns1], x2_1d[ff0ns1], alpha = 0.4 , s = 10, facecolors='darkred', edgecolors='none', label = r'$n_{ff} = 0$ \& $n_{str} > 1$')
 plt.legend()
+
+# ------------------------------
+
+
 plt.figure(22)
 plt.scatter( x1_1d[ff1ns1], x2_1d[ff1ns1], alpha = 0.4 , s = 10, facecolors='navy', edgecolors='none',  label = r'$n_{ff} > 0$ \& $n_{str} > 1$')
 plt.legend()
+
+
+# ------------------------------
 
 
 plt.figure(figsize = (8,8))
@@ -139,8 +209,8 @@ norm = colors.BoundaryNorm(bounds, cmap.N)
 plt.imshow(nstream_2d,  alpha = 0.7,  cmap = cmap )
 
 
-plt.xlim(0,1)
-plt.ylim(0,1)
+plt.xlim(0,L)
+plt.ylim(0,L)
 plt.xlabel(r" $h^{-1} Mpc$")
 plt.ylabel(r" $h^{-1} Mpc$")
 plt.legend(bbox_to_anchor=(1.05, 1.05),  markerscale=4., scatterpoints=3)
@@ -148,15 +218,12 @@ plt.tight_layout()
 plt.savefig('plots/ff_nst_conditions1.pdf', bbox_inches='tight')
 
 
-
-
-
-plt.show()
+# ------------------------------
 
 
 from matplotlib import colors
 ybeg = zbeg = 0
-yend = zend = 127
+yend = zend = nGr - 1
 
 
 f, ax = plt.subplots( 2,2, figsize = (12,12))
@@ -174,7 +241,7 @@ plt.ylabel(r" $h^{-1} Mpc$")
 
 
 
-nstream_2d_a = nstream[slice_noX,ybeg:yend,zbeg:zend]
+nstream_2d_a = nstream[sliceNo,ybeg:yend,zbeg:zend]
 
 #nstream_2d_a = nstream[slice_noX-2:slice_noX+2,ybeg:yend,zbeg:zend]
 
@@ -264,6 +331,7 @@ plt.savefig('plots/ff_nstCond.pdf', bbox_inches='tight')
 
 plt.show()
 
+# ------------------------------
 
 
 plt.figure(120)
@@ -276,8 +344,8 @@ plt.legend()
 
 plt.savefig('plots/ff1234_nst1.pdf', bbox_inches='tight')
 
-plt.show()
 
+# ------------------------------
 
 
 plt.figure(figsize = (8,8))
@@ -304,7 +372,9 @@ plt.ylabel(r" $h^{-1} Mpc$")
 plt.tight_layout()
 plt.savefig('plots/allPart.png', bbox_inches='tight')
 
-plt.show()
+
+# ------------------------------
+
 
 
 f, ax = plt.subplots( 1,1, figsize = (12,12))
@@ -313,14 +383,14 @@ f.subplots_adjust( hspace = 0.05, wspace = 0.05)
 #plt.sca(ax[0])
 #plt.set_xticks(zticks)
 #plt.set_yticks(yticks)
-zticks = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6]
+zticks = 100*[0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6]
 ax.set_xticklabels(zticks)
 ax.set_yticklabels(zticks)
 plt.xlabel(r" $h^{-1} Mpc$")
 plt.ylabel(r" $h^{-1} Mpc$")
 
 #for nth in [1, 5, 15, 25]:
-nstream_2dt = nstream[slice_noX,:,:]
+nstream_2dt = nstream[sliceNo,:,:]
 
 from scipy.ndimage.filters import gaussian_filter
 nstream_2dt = gaussian_filter(nstream_2dt, sigma= 2.5)
@@ -330,3 +400,4 @@ plt.tight_layout()
 plt.show()
 plt.savefig('plots/thresholds.png', bbox_inches='tight')
 
+# ------------------------------
