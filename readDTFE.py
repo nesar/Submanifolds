@@ -11,7 +11,6 @@ refFactor = 1
 nGr = 128
 
 size_fact = refFactor*nGr
-#fileIn = 'npy/DensityDTFE_051_128.den'
 fileIn = 'npy/DensityDTFE_051_128.a_den'
 
 

@@ -276,13 +276,7 @@ plt.sca(ax[0,1])
 plt.gca().set_xticks([])
 #plt.gca().set_yticks([])
 
-#l3_slice = l3[slice_noX,ybeg:yend,zbeg:zend]
-#l3binary = np.where(  ( (l3_slice > 0) &  (nstream_2d_a > 0) ) , 1, 0)
-#cmap = colors.ListedColormap(['white', 'black'])
-#img2 = ax[0,1].imshow(l3binary, cmap = cmap)
-#img2.set_extent([ ybeg*L/size_fact , yend*L/size_fact, zbeg*L/size_fact, zend*L/size_fact])
-#img2 = plt.imshow(l3_slice, alpha = 0.3, cmap = 'prism')
-#
+
 
 img2 = plt.scatter( x1_1d[ff0ns0], x2_1d[ff0ns0], alpha = 0.2 , s = 10, facecolors='forestgreen', edgecolors='none', label = r'$n_{ff} = 0$ \& $n_{str} = 1$')
 #img2.set_extent([ ybeg*L/size_fact , yend*L/size_fact, zbeg*L/size_fact, zend*L/size_fact])
